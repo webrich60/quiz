@@ -121,6 +121,23 @@
         </div>
     </div>
 
+    <!-- 🔐 管理者パスワード入力モーダル（追加） -->
+    <div id="admin-auth-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-[8px_8px_0_0_#1e293b] border-4 border-slate-800 animate-fade-in text-center relative">
+            <button onclick="document.getElementById('admin-auth-modal').classList.replace('flex', 'hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-800 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="text-4xl mb-4">⚙️</div>
+            <h3 class="text-xl font-black text-slate-800 mb-2">管理者認証</h3>
+            <p class="text-sm font-bold text-slate-500 mb-6">パスワードを入力してください</p>
+            <input type="password" id="admin-pass-input" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-bold mb-2 text-center text-lg transition-all" placeholder="パスワード">
+            <p id="admin-auth-error" class="text-red-500 text-sm font-bold h-5 mb-4"></p>
+            <button onclick="window.checkAdminPass()" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#0f172a] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all">
+                認証する
+            </button>
+        </div>
+    </div>
+
     <!-- アプリケーションロジック -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
@@ -148,6 +165,54 @@
         // サウンド再生の準備（Web Audio API）
         let audioCtx;
         let isAudioInitialized = false;
+
+        // ==========================================
+        // 🌟 PWA 自前インストールボタンの制御ロジック
+        // ==========================================
+        let deferredPrompt;
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // AndroidやPCでインストール可能な環境ならボタンを表示
+            const container = document.getElementById('install-button-container');
+            if (container && !isStandalone) {
+                container.classList.remove('hidden');
+                container.classList.add('flex');
+            }
+        });
+
+        // ページ読み込み完了時、iOSで未インストールの場合はボタンを強制表示
+        window.addEventListener('DOMContentLoaded', () => {
+            if (isIOS && !isStandalone) {
+                const container = document.getElementById('install-button-container');
+                if (container) {
+                    container.classList.remove('hidden');
+                    container.classList.add('flex');
+                }
+            }
+        });
+
+        window.handleInstallClick = async function() {
+            if (deferredPrompt) {
+                // Android/PCの自動インストールダイアログを呼び出す
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    const container = document.getElementById('install-button-container');
+                    if (container) {
+                        container.classList.add('hidden');
+                        container.classList.remove('flex');
+                    }
+                }
+                deferredPrompt = null;
+            } else if (isIOS && !isStandalone) {
+                // iOSのSafariは自動案内がブロックされているという事実への対応
+                alert("【iPhone(Safari)をご利用の方へ】\n\n画面下部のメニューにある「共有ボタン（四角から上矢印が出ているマーク）」をタップし、メニューから「ホーム画面に追加」を選ぶと、アプリとしてインストールできます！");
+            }
+        };
 
         function initAudio() {
             if (isAudioInitialized) return;
@@ -251,7 +316,7 @@
             RefreshCw: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>`,
             ChevronRight: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
             Trophy: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>`,
-            Leaf: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path></svg>`,
+            Leaf: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 12 12"></path></svg>`,
             User: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`,
             Award: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"></circle><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"></path></svg>`,
             Link: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`,
@@ -455,12 +520,23 @@
             else if (modeStr === 'links') renderLinks(); 
             else if (modeStr === 'contact') renderContact();
             else if (modeStr === 'admin') {
-                const pass = prompt('【管理者専用】パスワードを入力してください：');
-                if (pass === 'fukui2026') { 
-                    renderAdmin();
-                } else {
-                    if (pass !== null) alert('パスワードが違います。');
-                }
+                // 変更：ブラウザ標準機能（prompt）をやめて、自作のカッコいいモーダルを表示する
+                document.getElementById('admin-pass-input').value = '';
+                document.getElementById('admin-auth-error').innerText = '';
+                const modal = document.getElementById('admin-auth-modal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        // 追加：パスワードをチェックする機能
+        window.checkAdminPass = function() {
+            const pass = document.getElementById('admin-pass-input').value;
+            if (pass === 'fukui2026') { 
+                document.getElementById('admin-auth-modal').classList.replace('flex', 'hidden');
+                renderAdmin();
+            } else {
+                document.getElementById('admin-auth-error').innerText = 'パスワードが違います';
             }
         }
 
@@ -718,20 +794,22 @@
                             福井県民<br />
                             <span class="text-blue-600">ショー</span>
                         </h1>
-                        <p class="text-slate-600 text-lg md:text-xl font-bold mt-4">
+                        <p class="text-slate-600 text-lg md:text-xl font-bold mt-4 mb-8">
                             えっ、こんなの知ってるの…？<br class="md:hidden" />あなたの『地元愛』が今、試される！
                         </p>
-                    </div>`;
 
-            if (errorMsg) {
-                html += `
-                    <div class="bg-red-50 border-2 border-red-800 p-4 rounded-xl flex items-center justify-center gap-2 text-red-700 font-bold relative z-20 shadow-[4px_4px_0_0_#991b1b]">
-                        ${ICONS.AlertTriangle}
-                        <p>${errorMsg}</p>
-                    </div>`;
-            }
+                        <!-- 🌟 PWA自作インストールアイコンボタン -->
+                        <div id="install-button-container" class="${(deferredPrompt || isIOS) && !isStandalone ? 'flex' : 'hidden'} justify-center mb-10 relative z-20">
+                            <button onclick="window.handleInstallClick()" class="bg-white border-4 border-emerald-500 hover:bg-emerald-50 text-emerald-800 font-black py-3 px-6 rounded-2xl shadow-[4px_4px_0_0_#10b981] flex items-center gap-4 animate-bounce transition-all active:translate-y-[4px] active:translate-x-[4px] active:shadow-none w-full max-w-sm mx-auto">
+                                <img src="./icon-192x192.png" alt="アプリアイコン" class="w-12 h-12 rounded-xl shadow-sm border border-slate-200">
+                                <div class="text-left">
+                                    <div class="text-xs text-emerald-600 font-bold mb-0.5">無料アプリ版をゲット</div>
+                                    <div class="text-base md:text-lg tracking-wide">スマホに追加する</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
 
-            html += `
                     <div class="grid gap-4 md:gap-6 md:grid-cols-2 relative z-20">
                         <button onclick="window.setMode('category')" class="group relative w-full p-5 md:p-8 rounded-2xl bg-white border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all duration-100 flex flex-col items-center text-center">
                             <div class="text-blue-500 w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 group-hover:scale-110 transition-transform">${ICONS.Map}</div>
@@ -767,13 +845,13 @@
                         <p class="text-xs text-slate-400 font-bold mt-2 mb-8">現在の出題済み問題数: ${usedQuestionIds.size} / ${QUIZ_DATA.length}</p>
                         
                         <div class="flex flex-wrap justify-center items-center gap-3">
-                            <button onclick="window.setMode('links')" class="flex items-center gap-2 px-5 py-3 bg-white border-2 border-slate-800 rounded-xl shadow-[2px_2px_0_0_#1e293b] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none font-black text-slate-700 text-sm transition-all">
+                            <button onclick="window.setMode('links')" class="flex items-center gap-2 px-5 py-3 bg-white border-2 border-slate-800 rounded-xl shadow-[2px_2px_0_0_#1e293b] active:translate-y-[2px] active:translate-x-[4px] active:shadow-none font-black text-slate-700 text-sm transition-all">
                                 <div class="w-5 h-5 text-emerald-500">${ICONS.Link}</div> ご当地リンク集
                             </button>
                             <button onclick="window.setMode('contact')" class="flex items-center gap-2 px-5 py-3 bg-white border-2 border-slate-800 rounded-xl shadow-[2px_2px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none font-black text-slate-700 text-sm transition-all">
                                 <div class="w-5 h-5 text-blue-500">${ICONS.Mail}</div> お問い合わせ
                             </button>
-                            <button onclick="window.setMode('admin')" class="flex items-center gap-1 px-3 py-3 bg-slate-100 border-2 border-slate-300 rounded-xl shadow-[2px_2px_0_0_#cbd5e1] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none font-black text-slate-500 hover:text-slate-700 hover:bg-slate-200 text-xs transition-all ml-2">
+                            <button onclick="window.setMode('admin')" class="flex items-center gap-1 px-3 py-3 bg-slate-100 border-2 border-slate-300 rounded-xl shadow-[2px_2px_0_0_#cbd5e1] active:translate-y-[2px] active:translate-x-[4px] active:shadow-none font-black text-slate-500 hover:text-slate-700 hover:bg-slate-200 text-xs transition-all ml-2">
                                 <div class="w-4 h-4">${ICONS.Settings}</div> 管理
                             </button>
                         </div>
@@ -1557,3 +1635,5 @@
     </script>
 </body>
 </html>
+
+        
