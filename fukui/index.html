@@ -6,40 +6,14 @@
     
     <!-- SEO最適化 -->
     <title>福井県民ショー - ご当地愛テスト</title>
-    <meta name="description" content="福井のグルメ、観光、歴史、方言、イベント・祭りに関する激ムズご当地クイズアプリ。真の県民テストに挑戦して、あなたの「地元愛」を証明しよう！">
+    <meta name="description" content="福井のグルメ、観光、歴史、方言、イベントに関する激ムズご当地クイズアプリ。真の県民テストに挑戦して、あなたの「地元愛」を証明しよう！">
     <meta name="keywords" content="福井県民ショー,クイズ,激ムズ,ご当地,観光,歴史,方言,テスト,暇つぶし">
-    <meta name="author" content="福井県民ショー">
-    <meta name="robots" content="index, follow">
+    
+    <!-- 🌟 PWA（アプリ・インストール）化のための設定 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e293b">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
 
-    <!-- 👇 ここから追加：OGP設定（SNSでの拡散・SEO強化用） -->
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="福井県民ショー - 激ムズご当地愛テスト">
-    <meta property="og:description" content="福井の魅力が詰まった激ムズクイズに挑戦！全国のプレイヤーと地元愛を競い合おう。">
-    <!-- ※公開URLが確定したら、以下のURLを実際のアプリのURLに書き換えてください -->
-    <meta property="og:url" content="https://webrich60.github.io/あなたのリポジトリ名/">
-    <meta property="og:site_name" content="福井県民ショー">
-    <!-- ※SNSでシェアされた時に大きく表示される画像です。後で本物の画像URLに変えるとクリック率が爆増します -->
-    <meta property="og:image" content="https://placehold.co/1200x630/1e293b/ffffff?text=Fukui+Quiz"> 
-    <meta name="twitter:card" content="summary_large_image">
-
-    <!-- 👇 ここから追加：構造化データ（Googleに「これは安全で無料のゲームアプリだ」と正確に伝える） -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "福井県民ショー - ご当地愛テスト",
-      "operatingSystem": "Web Browser",
-      "applicationCategory": "GameApplication",
-      "description": "福井県のグルメ、観光、歴史、方言に関するクイズアプリです。リアルタイムランキング搭載。",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "JPY"
-      }
-    }
-    </script>
-
-    <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
@@ -660,6 +634,26 @@
             }, 3000);
         }
 
+        // 🌟 GAS URL単体で保存するための新しい関数
+        window.saveGasUrl = function(btnElement) {
+            const gasUrl = document.getElementById('gas-url-input').value.trim();
+            localStorage.setItem('fukui_quiz_gas_url', gasUrl);
+            
+            // ボタンの見た目を変えて保存完了を知らせる
+            const originalText = btnElement.innerHTML;
+            btnElement.innerHTML = '✅ 保存しました';
+            btnElement.classList.replace('bg-slate-800', 'bg-emerald-600');
+            btnElement.classList.replace('hover:bg-slate-900', 'hover:bg-emerald-700');
+            btnElement.classList.replace('border-slate-800', 'border-emerald-700');
+            
+            setTimeout(() => {
+                btnElement.innerHTML = originalText;
+                btnElement.classList.replace('bg-emerald-600', 'bg-slate-800');
+                btnElement.classList.replace('hover:bg-emerald-700', 'hover:bg-slate-900');
+                btnElement.classList.replace('border-emerald-700', 'border-slate-800');
+            }, 2000);
+        }
+
         function saveLinksToStorage() {
             localStorage.setItem('fukui_quiz_custom_links', JSON.stringify(customLinks));
         }
@@ -1278,10 +1272,17 @@
                         
                         <h3 class="text-xl font-black text-slate-800 mt-6 mb-4 border-l-4 border-purple-500 pl-3">お問い合わせシステム（GAS）設定</h3>
                         <p class="font-bold text-slate-600 text-sm mb-4">お問い合わせフォームからメールを送信するための「GASウェブアプリURL」を設定します。</p>
+                        
+                        <!-- 🌟 伏字化（type="password"）＆ 単体保存ボタンの追加 -->
                         <div class="space-y-6 mb-10">
-                            <div>
-                                <label class="block text-sm font-black text-slate-800 mb-2">GASウェブアプリURL</label>
-                                <input type="text" id="gas-url-input" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-bold text-sm transition-all placeholder:text-slate-400" value="${currentGasUrl}" placeholder="https://script.google.com/macros/s/.../exec">
+                            <div class="flex flex-col md:flex-row gap-3 items-end">
+                                <div class="flex-1 w-full">
+                                    <label class="block text-sm font-black text-slate-800 mb-2">GASウェブアプリURL（非表示）</label>
+                                    <input type="password" id="gas-url-input" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-bold text-sm transition-all placeholder:text-slate-400" value="${currentGasUrl}" placeholder="https://script.google.com/macros/s/.../exec">
+                                </div>
+                                <button onclick="window.saveGasUrl(this)" class="w-full md:w-auto px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+                                    <div class="w-4 h-4">${ICONS.Settings}</div> URLを保存
+                                </button>
                             </div>
                         </div>
 
@@ -1537,6 +1538,21 @@
         // 🚀 アプリの起動（データを取得してから画面を表示）
         // ==========================================
         fetchQuizData();
+        
+        // 🌟 PWA（Service Worker）の登録
+        if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('✅ ServiceWorker登録成功（PWAインストール準備完了）');
+                    })
+                    .catch(err => {
+                        console.error('❌ ServiceWorker登録失敗: ', err);
+                    });
+            });
+        } else {
+            console.log('ℹ️ プレビュー環境のためPWAインストールはスキップされます。本番環境(https)では正常に動作します。');
+        }
         
     </script>
 </body>
