@@ -171,6 +171,7 @@
         // ==========================================
         let deferredPrompt;
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isLine = navigator.userAgent.includes("Line"); // 🌟 LINEブラウザを検知する機能を追加
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -186,7 +187,7 @@
 
         // ページ読み込み完了時、iOSで未インストールの場合はボタンを強制表示
         window.addEventListener('DOMContentLoaded', () => {
-            if (isIOS && !isStandalone) {
+            if ((isIOS || isLine) && !isStandalone) {
                 const container = document.getElementById('install-button-container');
                 if (container) {
                     container.classList.remove('hidden');
@@ -196,6 +197,12 @@
         });
 
         window.handleInstallClick = async function() {
+            if (isLine && !isStandalone) {
+                // 💡 LINEから開いた人がボタンを押した時だけ、この専用メッセージを出します（画面は汚しません）
+                alert("【LINEから開いている方へ】\n\nLINEの画面の中ではアプリを追加できません。\n\n画面右上（または右下）の「⋮」メニュー等から「デフォルトのブラウザで開く」（SafariやChrome等）を選び、そちらの画面で再度このボタンを押してください！");
+                return;
+            }
+
             if (deferredPrompt) {
                 // Android/PCの自動インストールダイアログを呼び出す
                 deferredPrompt.prompt();
@@ -211,6 +218,8 @@
             } else if (isIOS && !isStandalone) {
                 // iOSのSafariは自動案内がブロックされているという事実への対応
                 alert("【iPhone(Safari)をご利用の方へ】\n\n画面下部のメニューにある「共有ボタン（四角から上矢印が出ているマーク）」をタップし、メニューから「ホーム画面に追加」を選ぶと、アプリとしてインストールできます！");
+            } else {
+                alert("【アプリを追加する方法】\n\nお使いのブラウザのメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。");
             }
         };
 
@@ -799,7 +808,7 @@
                         </p>
 
                         <!-- 🌟 PWA自作インストールアイコンボタン（さらにコンパクトに修正） -->
-                        <div id="install-button-container" class="${(deferredPrompt || isIOS) && !isStandalone ? 'flex' : 'hidden'} justify-center mb-8 relative z-20">
+                        <div id="install-button-container" class="${(deferredPrompt || isIOS || isLine) && !isStandalone ? 'flex' : 'hidden'} justify-center mb-8 relative z-20">
                             <button onclick="window.handleInstallClick()" class="bg-white border-2 border-emerald-500 hover:bg-emerald-50 text-emerald-800 font-black py-2 px-4 rounded-xl shadow-[2px_2px_0_0_#10b981] flex items-center gap-2 animate-bounce transition-all active:translate-y-[2px] active:translate-x-[2px] active:shadow-none w-max mx-auto">
                                 <img src="./icon-192x192.png" alt="アプリアイコン" class="w-8 h-8 rounded-lg shadow-sm border border-slate-200">
                                 <div class="text-left">
@@ -808,17 +817,8 @@
                                 </div>
                             </button>
                         </div>
-                    </div>`;
+                    </div>
 
-            if (errorMsg) {
-                html += `
-                    <div class="bg-red-50 border-2 border-red-800 p-4 rounded-xl flex items-center justify-center gap-2 text-red-700 font-bold relative z-20 shadow-[4px_4px_0_0_#991b1b]">
-                        ${ICONS.AlertTriangle}
-                        <p>${errorMsg}</p>
-                    </div>`;
-            }
-
-            html += `
                     <div class="grid gap-4 md:gap-6 md:grid-cols-2 relative z-20">
                         <button onclick="window.setMode('category')" class="group relative w-full p-5 md:p-8 rounded-2xl bg-white border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all duration-100 flex flex-col items-center text-center">
                             <div class="text-blue-500 w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 group-hover:scale-110 transition-transform">${ICONS.Map}</div>
