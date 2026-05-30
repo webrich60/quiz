@@ -798,13 +798,13 @@
                             えっ、こんなの知ってるの…？<br class="md:hidden" />あなたの『地元愛』が今、試される！
                         </p>
 
-                        <!-- 🌟 PWA自作インストールアイコンボタン（コンパクトに修正） -->
-                        <div id="install-button-container" class="${(deferredPrompt || isIOS) && !isStandalone ? 'flex' : 'hidden'} justify-center mb-10 relative z-20">
-                            <button onclick="window.handleInstallClick()" class="bg-white border-2 border-emerald-500 hover:bg-emerald-50 text-emerald-800 font-black py-2.5 px-5 rounded-xl shadow-[3px_3px_0_0_#10b981] flex items-center gap-3 animate-bounce transition-all active:translate-y-[3px] active:translate-x-[3px] active:shadow-none w-max mx-auto">
-                                <img src="./icon-192x192.png" alt="アプリアイコン" class="w-9 h-9 rounded-lg shadow-sm border border-slate-200">
+                        <!-- 🌟 PWA自作インストールアイコンボタン（さらにコンパクトに修正） -->
+                        <div id="install-button-container" class="${(deferredPrompt || isIOS) && !isStandalone ? 'flex' : 'hidden'} justify-center mb-8 relative z-20">
+                            <button onclick="window.handleInstallClick()" class="bg-white border-2 border-emerald-500 hover:bg-emerald-50 text-emerald-800 font-black py-2 px-4 rounded-xl shadow-[2px_2px_0_0_#10b981] flex items-center gap-2 animate-bounce transition-all active:translate-y-[2px] active:translate-x-[2px] active:shadow-none w-max mx-auto">
+                                <img src="./icon-192x192.png" alt="アプリアイコン" class="w-8 h-8 rounded-lg shadow-sm border border-slate-200">
                                 <div class="text-left">
-                                    <div class="text-[10px] text-emerald-600 font-bold mb-0.5 leading-none">無料アプリ版をゲット</div>
-                                    <div class="text-sm md:text-base tracking-wide leading-tight">スマホに追加する</div>
+                                    <div class="text-[9px] text-emerald-600 font-bold mb-0.5 leading-none">無料アプリ版をゲット</div>
+                                    <div class="text-xs md:text-sm tracking-wide leading-tight">PC・スマホに追加する</div>
                                 </div>
                             </button>
                         </div>
@@ -1635,4 +1635,3 @@
     </script>
 </body>
 </html>
-        
