@@ -104,8 +104,9 @@
         </div>
     </div>
 
-    <!-- 広告枠（上部）: JSで動的に表示 -->
-    <div id="ad-top-wrapper" class="w-full bg-white border-b border-slate-200 py-2 px-4 flex justify-center shadow-sm z-40 shrink-0 hidden">
+    <!-- 🌟 広告枠（上部）: PR表記を追加 -->
+    <div id="ad-top-wrapper" class="w-full bg-white border-b border-slate-200 py-1.5 px-4 flex flex-col items-center justify-center shadow-sm z-40 shrink-0 hidden">
+        <span class="text-[9px] text-slate-400 font-bold mb-0.5 tracking-wider">PR</span>
         <div id="ad-top-container" class="w-full max-w-3xl flex justify-center items-center">
             <!-- 広告がここに入る -->
         </div>
@@ -114,8 +115,9 @@
     <!-- アプリメインコンテンツ描画エリア: ここだけがスクロールする -->
     <main id="app-root" class="flex-1 flex flex-col w-full z-10 relative overflow-y-auto"></main>
 
-    <!-- 広告枠（下部）: JSで動的に表示 -->
-    <div id="ad-bottom-wrapper" class="w-full bg-white border-t border-slate-200 py-2 px-4 flex justify-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40 shrink-0 mt-auto hidden">
+    <!-- 🌟 広告枠（下部）: PR表記を追加 -->
+    <div id="ad-bottom-wrapper" class="w-full bg-white border-t border-slate-200 py-1.5 px-4 flex flex-col items-center justify-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40 shrink-0 mt-auto hidden">
+        <span class="text-[9px] text-slate-400 font-bold mb-0.5 tracking-wider">PR</span>
         <div id="ad-bottom-container" class="w-full max-w-3xl flex justify-center items-center">
             <!-- 広告がここに入る -->
         </div>
@@ -140,7 +142,7 @@
 
     <!-- アプリケーションロジック -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { initializeApp as initFirebase } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
         // =====================================================================
@@ -156,72 +158,63 @@
             measurementId: "G-RD5YWEDR1K"
         };
 
-        const app = initializeApp(firebaseConfig);
+        const app = initFirebase(firebaseConfig);
         const db = getFirestore(app);
 
-        // ★空っぽのクイズデータ（起動時にFirestoreからすべて読み込みます）
+        // ★空っぽのクイズデータ
         let QUIZ_DATA = [];
 
-        // サウンド再生の準備（Web Audio API）
+        // ==========================================
+        // 🌟 クラウド同期型 アプリ全体設定（Firestore）
+        // ==========================================
+        let appSettings = {
+            adTop: '',
+            adBottom: '',
+            linksAdTop: '',
+            linksAdBottom: '',
+            gasUrl: '',
+            customLinks: [
+                { title: 'ふくいドットコム', desc: '福井県公式観光サイト。最新の観光スポットやグルメ情報が満載。', url: 'https://www.fuku-e.com/' },
+                { title: '福井県立恐竜博物館', desc: '世界有数の規模を誇る恐竜博物館の公式サイト。', url: 'https://www.dinosaur.pref.fukui.jp/' },
+                { title: '福井県ホームページ', desc: '福井県の県政情報や生活に役立つ情報はこちら。', url: 'https://www.pref.fukui.lg.jp/' },
+                { title: '福井市観光公式サイト', desc: '福井市の観光、イベント、グルメ情報。', url: 'https://fukuikanko.jp/' }
+            ]
+        };
+
+        // 起動時にFirestoreから設定を取得する
+        async function fetchAppSettings() {
+            try {
+                const docRef = doc(db, "app_settings", "global_config");
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    appSettings = { ...appSettings, ...docSnap.data() };
+                    console.log("✅ クラウドからアプリ設定を同期しました");
+                } else {
+                    // ドキュメントが存在しない場合はデフォルトを作成
+                    await setDoc(docRef, appSettings);
+                }
+            } catch (e) {
+                console.error("設定読み込みエラー", e);
+            }
+        }
+
+        // Firestoreへ設定を保存する
+        async function saveAppSettingsToFirestore() {
+            try {
+                await setDoc(doc(db, "app_settings", "global_config"), appSettings);
+                return true;
+            } catch (e) {
+                console.error("設定保存エラー", e);
+                alert("設定の保存に失敗しました。Firestoreの権限（ルール）を確認してください。");
+                return false;
+            }
+        }
+
+        // ==========================================
+        // 🎵 サウンド再生の準備（Web Audio API）
+        // ==========================================
         let audioCtx;
         let isAudioInitialized = false;
-
-        // ==========================================
-        // 🌟 PWA 自前インストールボタンの制御ロジック
-        // ==========================================
-        let deferredPrompt;
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isLine = navigator.userAgent.includes("Line"); // 🌟 LINEブラウザを検知する機能を追加
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            // AndroidやPCでインストール可能な環境ならボタンを表示
-            const container = document.getElementById('install-button-container');
-            if (container && !isStandalone) {
-                container.classList.remove('hidden');
-                container.classList.add('flex');
-            }
-        });
-
-        // ページ読み込み完了時、iOSで未インストールの場合はボタンを強制表示
-        window.addEventListener('DOMContentLoaded', () => {
-            if ((isIOS || isLine) && !isStandalone) {
-                const container = document.getElementById('install-button-container');
-                if (container) {
-                    container.classList.remove('hidden');
-                    container.classList.add('flex');
-                }
-            }
-        });
-
-        window.handleInstallClick = async function() {
-            if (isLine && !isStandalone) {
-                // 💡 LINEから開いた人がボタンを押した時だけ、この専用メッセージを出します（画面は汚しません）
-                alert("【LINEから開いている方へ】\n\nLINEの画面の中ではアプリを追加できません。\n\n画面右上（または右下）の「⋮」メニュー等から「デフォルトのブラウザで開く」（SafariやChrome等）を選び、そちらの画面で再度このボタンを押してください！");
-                return;
-            }
-
-            if (deferredPrompt) {
-                // Android/PCの自動インストールダイアログを呼び出す
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    const container = document.getElementById('install-button-container');
-                    if (container) {
-                        container.classList.add('hidden');
-                        container.classList.remove('flex');
-                    }
-                }
-                deferredPrompt = null;
-            } else if (isIOS && !isStandalone) {
-                // iOSのSafariは自動案内がブロックされているという事実への対応
-                alert("【iPhone(Safari)をご利用の方へ】\n\n画面下部のメニューにある「共有ボタン（四角から上矢印が出ているマーク）」をタップし、メニューから「ホーム画面に追加」を選ぶと、アプリとしてインストールできます！");
-            } else {
-                alert("【アプリを追加する方法】\n\nお使いのブラウザのメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。");
-            }
-        };
 
         function initAudio() {
             if (isAudioInitialized) return;
@@ -241,7 +234,6 @@
             }
         }
 
-        // ★ 音の演出を大幅にパワーアップしました
         function playSound(type) {
             if (!audioCtx) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -252,16 +244,12 @@
             gainNode.connect(audioCtx.destination);
             
             if (type === 'correct') {
-                // クイズ番組風の綺麗な「ピン・ポン♪」
                 oscillator.type = 'sine';
-                
-                // 1音目: ピン (B5)
                 oscillator.frequency.setValueAtTime(987.77, audioCtx.currentTime);
                 gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
                 gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
                 gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
 
-                // 2音目: ポン (G5)
                 oscillator.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
                 gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.25);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
@@ -269,23 +257,15 @@
                 oscillator.start(audioCtx.currentTime);
                 oscillator.stop(audioCtx.currentTime + 0.6);
             } else {
-                // なにくそ！と思わせるバラエティ番組風の「ブッ・ブー！！」
-                oscillator.type = 'sawtooth'; // ギザギザした少し不快な波形
-                
-                // 低く鈍い音（130Hz近辺）
+                oscillator.type = 'sawtooth';
                 oscillator.frequency.setValueAtTime(130, audioCtx.currentTime);
-                
-                // 1回目の「ブッ」
                 gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
                 gainNode.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.02);
                 gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.12);
-                
-                // 短い無音の隙間
                 gainNode.gain.setValueAtTime(0, audioCtx.currentTime + 0.15);
 
-                // 2回目の「ブー！」（少し長めに響かせて、最後にピッチを下げる＝脱力感）
                 gainNode.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.18);
-                oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.6); // 音が下がる
+                oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.6);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
 
                 oscillator.start(audioCtx.currentTime);
@@ -293,19 +273,66 @@
             }
         }
 
-        // ◯❌アニメーション表示
+        // ==========================================
+        // 🌟 PWA 自前インストールボタンの制御
+        // ==========================================
+        let deferredPrompt;
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isLine = navigator.userAgent.includes("Line");
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const container = document.getElementById('install-button-container');
+            if (container && !isStandalone) {
+                container.classList.remove('hidden');
+                container.classList.add('flex');
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if ((isIOS || isLine) && !isStandalone) {
+                const container = document.getElementById('install-button-container');
+                if (container) {
+                    container.classList.remove('hidden');
+                    container.classList.add('flex');
+                }
+            }
+        });
+
+        window.handleInstallClick = async function() {
+            if (isLine && !isStandalone) {
+                alert("【LINEから開いている方へ】\n\nLINEの画面の中ではアプリを追加できません。\n\n画面右上（または右下）の「⋮」メニュー等から「デフォルトのブラウザで開く」（SafariやChrome等）を選び、そちらの画面で再度このボタンを押してください！");
+                return;
+            }
+
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    const container = document.getElementById('install-button-container');
+                    if (container) {
+                        container.classList.add('hidden');
+                        container.classList.remove('flex');
+                    }
+                }
+                deferredPrompt = null;
+            } else if (isIOS && !isStandalone) {
+                alert("【iPhone(Safari)をご利用の方へ】\n\n画面下部のメニューにある「共有ボタン（四角から上矢印が出ているマーク）」をタップし、メニューから「ホーム画面に追加」を選ぶと、アプリとしてインストールできます！");
+            } else {
+                alert("【アプリを追加する方法】\n\nお使いのブラウザのメニューから「ホーム画面に追加」または「アプリをインストール」を選択してください。");
+            }
+        };
+
         function showMark(isCorrect) {
             const markContainer = document.getElementById('mark-overlay');
             if (!markContainer) return;
-            
             markContainer.innerHTML = isCorrect 
                 ? '<div class="text-red-500 text-[15rem] md:text-[20rem] leading-none font-bold animate-mark-pop drop-shadow-xl">◯</div>'
                 : '<div class="text-blue-600 text-[15rem] md:text-[20rem] leading-none font-bold animate-mark-pop drop-shadow-xl">❌</div>';
-            
             markContainer.classList.remove('hidden');
             markContainer.classList.add('flex');
-            
-            // 1秒後に非表示
             setTimeout(() => {
                 markContainer.classList.add('hidden');
                 markContainer.classList.remove('flex');
@@ -313,7 +340,6 @@
             }, 1000);
         }
 
-        // SVGアイコンデータ
         const ICONS = {
             Map: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg>`,
             BookOpen: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>`,
@@ -355,10 +381,8 @@
         let errorMsg = '';
         let wrongAnswers = []; 
 
-        // --- ユーザーデータ・ランキング管理 ---
         let currentUser = JSON.parse(localStorage.getItem('fukui_quiz_user')) || { nickname: '', prefecture: '', userId: '' };
         if (!currentUser.userId) {
-            // ランキング用のユニークIDを発行
             currentUser.userId = 'u_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 5);
             localStorage.setItem('fukui_quiz_user', JSON.stringify(currentUser));
         }
@@ -377,20 +401,10 @@
 
         const appRoot = document.getElementById('app-root');
 
-        let customLinks = JSON.parse(localStorage.getItem('fukui_quiz_custom_links'));
-        if (!customLinks) {
-            customLinks = [
-                { title: 'ふくいドットコム', desc: '福井県公式観光サイト。最新の観光スポットやグルメ情報が満載。', url: 'https://www.fuku-e.com/' },
-                { title: '福井県立恐竜博物館', desc: '世界有数の規模を誇る恐竜博物館の公式サイト。', url: 'https://www.dinosaur.pref.fukui.jp/' },
-                { title: '福井県ホームページ', desc: '福井県の県政情報や生活に役立つ情報はこちら。', url: 'https://www.pref.fukui.lg.jp/' },
-                { title: '福井市観光公式サイト', desc: '福井市の観光、イベント、グルメ情報。', url: 'https://fukuikanko.jp/' }
-            ];
-            localStorage.setItem('fukui_quiz_custom_links', JSON.stringify(customLinks));
-        }
-
+        // ★グローバル設定データ（Firestoreと同期）
         function loadAds() {
-            const topAd = localStorage.getItem('fukui_quiz_ad_top');
-            const bottomAd = localStorage.getItem('fukui_quiz_ad_bottom');
+            const topAd = appSettings.adTop;
+            const bottomAd = appSettings.adBottom;
             
             const topWrapper = document.getElementById('ad-top-wrapper');
             const topContainer = document.getElementById('ad-top-container');
@@ -428,9 +442,6 @@
             }
         }
 
-        // ==========================================
-        // 🔄 アプリ起動時のデータ一括取得（Firestore）
-        // ==========================================
         async function fetchQuizData() {
             appRoot.innerHTML = `
                 <div class="flex-1 flex flex-col items-center justify-center p-6 w-full h-full animate-fade-in relative z-10 my-auto text-center">
@@ -442,7 +453,6 @@
             `;
 
             try {
-                // データベースから全クイズを一括取得
                 const querySnapshot = await getDocs(collection(db, "quizzes"));
                 const data = [];
                 querySnapshot.forEach((doc) => {
@@ -456,7 +466,6 @@
                 QUIZ_DATA = data;
                 console.log(`✅ Firestoreから ${QUIZ_DATA.length} 問のクイズを読み込みました`);
                 
-                // 準備が完了したらホーム画面へ
                 loadAds();
                 window.setMode('home');
                 
@@ -473,9 +482,6 @@
             }
         }
 
-        // ==========================================
-        // 🏅 ランキングデータのFirestore保存
-        // ==========================================
         async function saveScoreToFirestore(points) {
             if (!currentUser.nickname || !currentUser.userId || !db) return;
             
@@ -504,10 +510,6 @@
             }
         }
 
-        // ==========================================
-        // 🌐 グローバル（HTML）から呼び出せるように window に関数を登録
-        // ==========================================
-        
         window.setMode = function(modeStr) {
             initAudio(); 
             
@@ -529,7 +531,6 @@
             else if (modeStr === 'links') renderLinks(); 
             else if (modeStr === 'contact') renderContact();
             else if (modeStr === 'admin') {
-                // ブラウザ標準機能（prompt）をやめて、自作のカッコいいモーダルを表示する
                 document.getElementById('admin-pass-input').value = '';
                 document.getElementById('admin-auth-error').innerText = '';
                 const modal = document.getElementById('admin-auth-modal');
@@ -538,7 +539,6 @@
             }
         }
 
-        // 追加：パスワードをチェックする機能
         window.checkAdminPass = function() {
             const pass = document.getElementById('admin-pass-input').value;
             if (pass === 'fukui2026') { 
@@ -652,7 +652,6 @@
             currentUser.prefecture = prefInput;
             localStorage.setItem('fukui_quiz_user', JSON.stringify(currentUser));
             
-            // プロフィールが更新されたらFirestoreのドキュメントも更新しておく
             if (currentUser.userId && db) {
                 const userRef = doc(db, "users", currentUser.userId);
                 try {
@@ -690,60 +689,48 @@
             localScores.push(newRecord);
             localStorage.setItem('fukui_quiz_scores', JSON.stringify(localScores));
             
-            // 🔥 Firestoreにスコアを加算送信
             saveScoreToFirestore(pointsToAdd);
         }
 
-        window.saveSettings = function() {
-            const topAd = document.getElementById('top-ad-input').value;
-            const bottomAd = document.getElementById('bottom-ad-input').value;
-            const linksTopAd = document.getElementById('links-top-ad-input').value;
-            const linksBottomAd = document.getElementById('links-bottom-ad-input').value;
-            const gasUrl = document.getElementById('gas-url-input').value.trim();
+        window.saveSettings = async function(event) {
+            appSettings.adTop = document.getElementById('top-ad-input').value;
+            appSettings.adBottom = document.getElementById('bottom-ad-input').value;
+            appSettings.linksAdTop = document.getElementById('links-top-ad-input').value;
+            appSettings.linksAdBottom = document.getElementById('links-bottom-ad-input').value;
             
-            localStorage.setItem('fukui_quiz_ad_top', topAd);
-            localStorage.setItem('fukui_quiz_ad_bottom', bottomAd);
-            localStorage.setItem('fukui_quiz_links_ad_top', linksTopAd);
-            localStorage.setItem('fukui_quiz_links_ad_bottom', linksBottomAd);
-            localStorage.setItem('fukui_quiz_gas_url', gasUrl);
-            
-            loadAds();
-            
-            const msgEl = document.getElementById('ad-result-message');
-            msgEl.innerHTML = '✅ 管理者設定を保存し、アプリに反映しました！';
-            msgEl.className = 'mt-4 text-center font-bold text-emerald-800 bg-emerald-50 border-emerald-500 p-4 rounded-xl border-2 block';
-            
-            setTimeout(() => {
-                msgEl.classList.add('hidden');
-                msgEl.classList.remove('block');
-            }, 3000);
+            if (await saveAppSettingsToFirestore()) {
+                loadAds();
+                const msgEl = document.getElementById('ad-result-message');
+                msgEl.innerHTML = '✅ 管理者設定をFirestoreに保存・同期しました！';
+                msgEl.className = 'mt-4 text-center font-bold text-emerald-800 bg-emerald-50 border-emerald-500 p-4 rounded-xl border-2 block';
+                
+                setTimeout(() => {
+                    msgEl.classList.add('hidden');
+                    msgEl.classList.remove('block');
+                }, 3000);
+            }
         }
 
-        // 🌟 GAS URL単体で保存するための新しい関数
-        window.saveGasUrl = function(btnElement) {
-            const gasUrl = document.getElementById('gas-url-input').value.trim();
-            localStorage.setItem('fukui_quiz_gas_url', gasUrl);
+        window.saveGasUrl = async function(btnElement) {
+            appSettings.gasUrl = document.getElementById('gas-url-input').value.trim();
             
-            // ボタンの見た目を変えて保存完了を知らせる
-            const originalText = btnElement.innerHTML;
-            btnElement.innerHTML = '✅ 保存しました';
-            btnElement.classList.replace('bg-slate-800', 'bg-emerald-600');
-            btnElement.classList.replace('hover:bg-slate-900', 'hover:bg-emerald-700');
-            btnElement.classList.replace('border-slate-800', 'border-emerald-700');
-            
-            setTimeout(() => {
-                btnElement.innerHTML = originalText;
-                btnElement.classList.replace('bg-emerald-600', 'bg-slate-800');
-                btnElement.classList.replace('hover:bg-emerald-700', 'hover:bg-slate-900');
-                btnElement.classList.replace('border-emerald-700', 'border-slate-800');
-            }, 2000);
+            if (await saveAppSettingsToFirestore()) {
+                const originalText = btnElement.innerHTML;
+                btnElement.innerHTML = '✅ 保存しました';
+                btnElement.classList.replace('bg-slate-800', 'bg-emerald-600');
+                btnElement.classList.replace('hover:bg-slate-900', 'hover:bg-emerald-700');
+                btnElement.classList.replace('border-slate-800', 'border-emerald-700');
+                
+                setTimeout(() => {
+                    btnElement.innerHTML = originalText;
+                    btnElement.classList.replace('bg-emerald-600', 'bg-slate-800');
+                    btnElement.classList.replace('hover:bg-emerald-700', 'hover:bg-slate-900');
+                    btnElement.classList.replace('border-emerald-700', 'border-slate-800');
+                }, 2000);
+            }
         }
 
-        function saveLinksToStorage() {
-            localStorage.setItem('fukui_quiz_custom_links', JSON.stringify(customLinks));
-        }
-
-        window.addLink = function() {
+        window.addLink = async function() {
             const title = document.getElementById('new-link-title').value.trim();
             const url = document.getElementById('new-link-url').value.trim();
             const desc = document.getElementById('new-link-desc').value.trim();
@@ -753,20 +740,20 @@
                 return;
             }
 
-            customLinks.push({ title, url, desc });
-            saveLinksToStorage();
-            renderAdmin();
-        };
-
-        window.deleteLink = function(index) {
-            if (confirm('このリンクを削除してもよろしいですか？')) {
-                customLinks.splice(index, 1);
-                saveLinksToStorage();
+            appSettings.customLinks.push({ title, url, desc });
+            if (await saveAppSettingsToFirestore()) {
                 renderAdmin();
             }
         };
 
-        // --- 画面レンダリング関数群 ---
+        window.deleteLink = async function(index) {
+            if (confirm('このリンクを削除してもよろしいですか？')) {
+                appSettings.customLinks.splice(index, 1);
+                if (await saveAppSettingsToFirestore()) {
+                    renderAdmin();
+                }
+            }
+        };
 
         function renderHome() {
             window.scrollTo(0, 0);
@@ -781,7 +768,6 @@
                     </div>
                 `;
             } else {
-                 // ★ ランキング参加ボタンを少し小さく変更
                  profileHtml = `
                     <div class="absolute top-4 right-4">
                         <button onclick="window.setMode('profile')" class="flex items-center gap-1 bg-yellow-300 border-2 border-slate-800 px-2 py-1 rounded-full shadow-[2px_2px_0_0_#1e293b] text-xs font-bold text-slate-800 hover:bg-yellow-400 active:translate-y-[2px] active:translate-x-[2px] active:shadow-none transition-all">
@@ -807,7 +793,6 @@
                             えっ、こんなの知ってるの…？<br class="md:hidden" />あなたの『地元愛』が今、試される！
                         </p>
 
-                        <!-- 🌟 PWA自作インストールアイコンボタン（さらにコンパクトに修正） -->
                         <div id="install-button-container" class="${(deferredPrompt || isIOS || isLine) && !isStandalone ? 'flex' : 'hidden'} justify-center mb-8 relative z-20">
                             <button onclick="window.handleInstallClick()" class="bg-white border-2 border-emerald-500 hover:bg-emerald-50 text-emerald-800 font-black py-2 px-4 rounded-xl shadow-[2px_2px_0_0_#10b981] flex items-center gap-2 animate-bounce transition-all active:translate-y-[2px] active:translate-x-[2px] active:shadow-none w-max mx-auto">
                                 <img src="./icon-192x192.png" alt="アプリアイコン" class="w-8 h-8 rounded-lg shadow-sm border border-slate-200">
@@ -817,8 +802,17 @@
                                 </div>
                             </button>
                         </div>
-                    </div>
+                    </div>`;
 
+            if (errorMsg) {
+                html += `
+                    <div class="bg-red-50 border-2 border-red-800 p-4 rounded-xl flex items-center justify-center gap-2 text-red-700 font-bold relative z-20 shadow-[4px_4px_0_0_#991b1b]">
+                        ${ICONS.AlertTriangle}
+                        <p>${errorMsg}</p>
+                    </div>`;
+            }
+
+            html += `
                     <div class="grid gap-4 md:gap-6 md:grid-cols-2 relative z-20">
                         <button onclick="window.setMode('category')" class="group relative w-full p-5 md:p-8 rounded-2xl bg-white border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all duration-100 flex flex-col items-center text-center">
                             <div class="text-blue-500 w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 group-hover:scale-110 transition-transform">${ICONS.Map}</div>
@@ -1271,8 +1265,8 @@
         function renderLinks() {
             window.scrollTo(0, 0);
             
-            const linksTopAd = localStorage.getItem('fukui_quiz_links_ad_top') || '';
-            const linksBottomAd = localStorage.getItem('fukui_quiz_links_ad_bottom') || '';
+            const linksTopAd = appSettings.linksAdTop || '';
+            const linksBottomAd = appSettings.linksAdBottom || '';
             
             let html = `
             <div class="flex-1 p-6 w-full animate-fade-in relative z-10">
@@ -1291,12 +1285,16 @@
             `;
 
             if (linksTopAd.trim()) {
-                html += `<div class="mb-6 flex justify-center w-full overflow-hidden">${linksTopAd}</div>`;
+                html += `
+                <div class="mb-6 flex flex-col items-center w-full overflow-hidden">
+                    <span class="text-[9px] text-slate-400 font-bold mb-1 tracking-wider">PR</span>
+                    ${linksTopAd}
+                </div>`;
             }
                         
             html += `<div class="space-y-4">`;
 
-            customLinks.forEach(link => {
+            appSettings.customLinks.forEach(link => {
                 html += `
                             <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="block p-5 bg-white border-2 border-slate-800 rounded-xl shadow-[4px_4px_0_0_#1e293b] hover:bg-slate-50 active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all group">
                                 <div class="flex items-start justify-between gap-4">
@@ -1317,7 +1315,11 @@
             `;
 
             if (linksBottomAd.trim()) {
-                html += `<div class="mt-8 flex justify-center w-full overflow-hidden">${linksBottomAd}</div>`;
+                html += `
+                <div class="mt-8 flex flex-col items-center w-full overflow-hidden">
+                    <span class="text-[9px] text-slate-400 font-bold mb-1 tracking-wider">PR</span>
+                    ${linksBottomAd}
+                </div>`;
             }
             
             html += `
@@ -1340,9 +1342,9 @@
         function renderAdmin() {
             window.scrollTo(0, 0);
             
-            const currentTopAd = localStorage.getItem('fukui_quiz_ad_top') || '';
-            const currentBottomAd = localStorage.getItem('fukui_quiz_ad_bottom') || '';
-            const currentGasUrl = localStorage.getItem('fukui_quiz_gas_url') || '';
+            const currentTopAd = appSettings.adTop || '';
+            const currentBottomAd = appSettings.adBottom || '';
+            const currentGasUrl = appSettings.gasUrl || '';
 
             let html = `
             <div class="flex-1 p-6 w-full animate-fade-in relative z-10">
@@ -1360,7 +1362,6 @@
                         <h3 class="text-xl font-black text-slate-800 mt-6 mb-4 border-l-4 border-purple-500 pl-3">お問い合わせシステム（GAS）設定</h3>
                         <p class="font-bold text-slate-600 text-sm mb-4">お問い合わせフォームからメールを送信するための「GASウェブアプリURL」を設定します。</p>
                         
-                        <!-- 🌟 伏字化（type="password"）＆ 単体保存ボタンの追加 -->
                         <div class="space-y-6 mb-10">
                             <div class="flex flex-col md:flex-row gap-3 items-end">
                                 <div class="flex-1 w-full">
@@ -1400,18 +1401,18 @@
                         <div class="space-y-6 mb-10">
                             <div>
                                 <label class="block text-sm font-black text-slate-800 mb-2">リンク集 上部広告枠 (HTMLタグ)</label>
-                                <textarea id="links-top-ad-input" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y placeholder:text-slate-400" placeholder="<a href='...'><img src='...'></a>">${localStorage.getItem('fukui_quiz_links_ad_top') || ''}</textarea>
+                                <textarea id="links-top-ad-input" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y placeholder:text-slate-400" placeholder="<a href='...'><img src='...'></a>">${appSettings.linksAdTop || ''}</textarea>
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-black text-slate-800 mb-2">リンク集 下部広告枠 (HTMLタグ)</label>
-                                <textarea id="links-bottom-ad-input" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y placeholder:text-slate-400" placeholder="<a href='...'><img src='...'></a>">${localStorage.getItem('fukui_quiz_links_ad_bottom') || ''}</textarea>
+                                <textarea id="links-bottom-ad-input" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y placeholder:text-slate-400" placeholder="<a href='...'><img src='...'></a>">${appSettings.linksAdBottom || ''}</textarea>
                             </div>
                         </div>
 
                         <div class="pt-2 text-center border-b-2 border-slate-200 pb-8">
                             <button onclick="window.saveSettings()" class="w-full md:w-auto min-w-[240px] py-4 px-8 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all text-lg mx-auto">
-                                全ての設定を保存する
+                                全ての広告設定を保存する
                             </button>
                             <div id="ad-result-message" class="mt-4 text-center font-bold hidden rounded-xl p-4 border-2"></div>
                         </div>
@@ -1422,10 +1423,10 @@
                         <div class="space-y-3 mb-6">
             `;
 
-            if (customLinks.length === 0) {
+            if (appSettings.customLinks.length === 0) {
                 html += `<p class="text-slate-500 font-bold text-sm bg-slate-100 p-4 rounded-xl border-2 border-slate-200 text-center">登録されているリンクはありません。</p>`;
             } else {
-                customLinks.forEach((link, index) => {
+                appSettings.customLinks.forEach((link, index) => {
                     html += `
                             <div class="flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-200 rounded-xl">
                                 <div class="overflow-hidden mr-4">
@@ -1569,8 +1570,7 @@
             const btnSpinner = document.getElementById('btnSpinner');
             const resultMessage = document.getElementById('resultMessage');
 
-            // ⚠️ GASのウェブアプリURL（管理画面から設定したものを読み込む）
-            const GAS_WEB_APP_URL = localStorage.getItem('fukui_quiz_gas_url') || '';
+            const GAS_WEB_APP_URL = appSettings.gasUrl || '';
 
             form.addEventListener('submit', async (e) => {
                 e.preventDefault(); 
@@ -1624,7 +1624,12 @@
         // ==========================================
         // 🚀 アプリの起動（データを取得してから画面を表示）
         // ==========================================
-        fetchQuizData();
+        async function bootApp() {
+            await fetchAppSettings();
+            await fetchQuizData();
+        }
+        
+        bootApp();
         
         // 🌟 PWA（Service Worker）の登録
         if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
