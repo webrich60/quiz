@@ -24,7 +24,7 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
-            overflow-x: hidden; /* 横スクロールを防ぐ */
+            overflow-x: hidden;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
@@ -45,7 +45,7 @@
             animation: markPop 1s ease-out forwards;
         }
 
-        /* ご当地キャラひょっこりアニメーション1 */
+        /* ご当地キャラひょっこりアニメーション */
         @keyframes rightPop {
             0%, 40%, 100% { transform: translate(100%, 100%) rotate(20deg); }
             10% { transform: translate(-10%, -40%) rotate(-10deg); } 
@@ -56,7 +56,6 @@
             animation: rightPop 7s ease-in-out infinite;
         }
 
-        /* ご当地キャラひょっこりアニメーション2 */
         @keyframes leftPop {
             0%, 40%, 100% { transform: translate(-100%, 100%) rotate(-20deg); }
             10% { transform: translate(10%, -40%) rotate(10deg); } 
@@ -67,8 +66,11 @@
             animation: leftPop 9s ease-in-out infinite;
         }
 
-        /* ボタン等のタップハイライトを消す */
         * { -webkit-tap-highlight-color: transparent; }
+        
+        /* タブのスタイル */
+        .admin-tab-active { border-bottom: 4px solid #3b82f6; color: #1e3a8a; font-weight: 900; }
+        .admin-tab-inactive { border-bottom: 4px solid transparent; color: #64748b; font-weight: 700; }
     </style>
 </head>
 <body class="h-[100dvh] bg-slate-50 text-slate-800 flex flex-col font-sans relative overflow-hidden">
@@ -86,40 +88,33 @@
     <!-- ◯❌アニメーション表示用オーバーレイ -->
     <div id="mark-overlay" class="fixed inset-0 z-50 pointer-events-none hidden items-center justify-center bg-white/30 backdrop-blur-sm"></div>
 
-    <!-- 演出用レイヤー（JSで表示切替） -->
+    <!-- 演出用レイヤー -->
     <div id="effect-layer" class="fixed inset-0 pointer-events-none z-30 overflow-hidden">
-        <!-- 左下から飛び出すキャラ -->
         <div class="absolute bottom-[70px] md:bottom-[90px] -left-4 text-[6rem] md:text-[10rem] animate-left-pop drop-shadow-xl origin-bottom-left">
             <div class="relative inline-block">
                 🦀
-                <!-- 演出タグ（デモ用） -->
-                <div class="absolute top-[35%] right-[2%] bg-yellow-400 text-slate-800 text-[0.12em] font-black px-[0.3em] py-[0.2em] border-[0.02em] border-yellow-600 rounded-[0.1em] shadow-sm rotate-[15deg] leading-none whitespace-nowrap tracking-tighter">
-                    ご当地
-                </div>
+                <div class="absolute top-[35%] right-[2%] bg-yellow-400 text-slate-800 text-[0.12em] font-black px-[0.3em] py-[0.2em] border-[0.02em] border-yellow-600 rounded-[0.1em] shadow-sm rotate-[15deg] leading-none whitespace-nowrap tracking-tighter">ご当地</div>
             </div>
         </div>
-        <!-- 右下から飛び出すキャラ -->
         <div class="absolute bottom-[70px] md:bottom-[90px] -right-4 text-[6rem] md:text-[10rem] animate-right-pop drop-shadow-xl origin-bottom-right">
             🦖
         </div>
     </div>
 
-    <!-- 🌟 広告枠（上部）: PR表記を追加 -->
-    <div id="ad-top-wrapper" class="w-full bg-white border-b border-slate-200 py-1.5 px-4 flex flex-col items-center justify-center shadow-sm z-40 shrink-0 hidden">
-        <span class="text-[9px] text-slate-400 font-bold mb-0.5 tracking-wider">PR</span>
+    <!-- 広告枠（上部） -->
+    <div id="ad-top-wrapper" class="w-full bg-white border-b border-slate-200 py-1 px-4 flex flex-col justify-center items-center shadow-sm z-40 shrink-0 hidden">
+        <span class="text-[10px] text-slate-400 font-bold border border-slate-300 px-1 rounded-sm mb-1 leading-none">PR</span>
         <div id="ad-top-container" class="w-full max-w-3xl flex justify-center items-center">
-            <!-- 広告がここに入る -->
         </div>
     </div>
 
-    <!-- アプリメインコンテンツ描画エリア: ここだけがスクロールする -->
+    <!-- アプリメインコンテンツ描画エリア -->
     <main id="app-root" class="flex-1 flex flex-col w-full z-10 relative overflow-y-auto"></main>
 
-    <!-- 🌟 広告枠（下部）: PR表記を追加 -->
-    <div id="ad-bottom-wrapper" class="w-full bg-white border-t border-slate-200 py-1.5 px-4 flex flex-col items-center justify-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40 shrink-0 mt-auto hidden">
-        <span class="text-[9px] text-slate-400 font-bold mb-0.5 tracking-wider">PR</span>
+    <!-- 広告枠（下部） -->
+    <div id="ad-bottom-wrapper" class="w-full bg-white border-t border-slate-200 py-1 px-4 flex flex-col justify-center items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40 shrink-0 mt-auto hidden">
+        <span class="text-[10px] text-slate-400 font-bold border border-slate-300 px-1 rounded-sm mb-1 leading-none mt-1">PR</span>
         <div id="ad-bottom-container" class="w-full max-w-3xl flex justify-center items-center">
-            <!-- 広告がここに入る -->
         </div>
     </div>
 
@@ -142,7 +137,7 @@
 
     <!-- アプリケーションロジック -->
     <script type="module">
-        import { initializeApp as initFirebase } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
         import { getFirestore, collection, getDocs, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
         // =====================================================================
@@ -158,123 +153,15 @@
             measurementId: "G-RD5YWEDR1K"
         };
 
-        const app = initFirebase(firebaseConfig);
+        const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // ★空っぽのクイズデータ
         let QUIZ_DATA = [];
-
-        // ==========================================
-        // 🌟 クラウド同期型 アプリ全体設定（Firestore）
-        // ==========================================
-        let appSettings = {
-            adTop: '',
-            adBottom: '',
-            linksAdTop: '',
-            linksAdBottom: '',
-            gasUrl: '',
-            customLinks: [
-                { title: 'ふくいドットコム', desc: '福井県公式観光サイト。最新の観光スポットやグルメ情報が満載。', url: 'https://www.fuku-e.com/' },
-                { title: '福井県立恐竜博物館', desc: '世界有数の規模を誇る恐竜博物館の公式サイト。', url: 'https://www.dinosaur.pref.fukui.jp/' },
-                { title: '福井県ホームページ', desc: '福井県の県政情報や生活に役立つ情報はこちら。', url: 'https://www.pref.fukui.lg.jp/' },
-                { title: '福井市観光公式サイト', desc: '福井市の観光、イベント、グルメ情報。', url: 'https://fukuikanko.jp/' }
-            ]
-        };
-
-        // 起動時にFirestoreから設定を取得する
-        async function fetchAppSettings() {
-            try {
-                const docRef = doc(db, "app_settings", "global_config");
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    appSettings = { ...appSettings, ...docSnap.data() };
-                    console.log("✅ クラウドからアプリ設定を同期しました");
-                } else {
-                    // ドキュメントが存在しない場合はデフォルトを作成
-                    await setDoc(docRef, appSettings);
-                }
-            } catch (e) {
-                console.error("設定読み込みエラー", e);
-            }
-        }
-
-        // Firestoreへ設定を保存する
-        async function saveAppSettingsToFirestore() {
-            try {
-                await setDoc(doc(db, "app_settings", "global_config"), appSettings);
-                return true;
-            } catch (e) {
-                console.error("設定保存エラー", e);
-                alert("設定の保存に失敗しました。Firestoreの権限（ルール）を確認してください。");
-                return false;
-            }
-        }
-
-        // ==========================================
-        // 🎵 サウンド再生の準備（Web Audio API）
-        // ==========================================
         let audioCtx;
         let isAudioInitialized = false;
 
-        function initAudio() {
-            if (isAudioInitialized) return;
-            try {
-                window.AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                gain.gain.value = 0;
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.01);
-                isAudioInitialized = true;
-            } catch (e) {
-                console.log("Web Audio API not supported");
-            }
-        }
-
-        function playSound(type) {
-            if (!audioCtx) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            
-            if (type === 'correct') {
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(987.77, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
-                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
-
-                oscillator.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
-                gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.25);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
-
-                oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + 0.6);
-            } else {
-                oscillator.type = 'sawtooth';
-                oscillator.frequency.setValueAtTime(130, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.02);
-                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.12);
-                gainNode.gain.setValueAtTime(0, audioCtx.currentTime + 0.15);
-
-                gainNode.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.18);
-                oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.6);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
-
-                oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + 0.6);
-            }
-        }
-
         // ==========================================
-        // 🌟 PWA 自前インストールボタンの制御
+        // 🌟 PWA 自前インストールボタンの制御ロジック
         // ==========================================
         let deferredPrompt;
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -325,6 +212,59 @@
             }
         };
 
+        function initAudio() {
+            if (isAudioInitialized) return;
+            try {
+                window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                gain.gain.value = 0;
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.01);
+                isAudioInitialized = true;
+            } catch (e) {
+                console.log("Web Audio API not supported");
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'correct') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(987.77, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.15);
+                oscillator.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
+                gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.25);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.6);
+            } else {
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(130, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.02);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.12);
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime + 0.15);
+                gainNode.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.18);
+                oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.6);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.6);
+            }
+        }
+
         function showMark(isCorrect) {
             const markContainer = document.getElementById('mark-overlay');
             if (!markContainer) return;
@@ -357,17 +297,18 @@
             Link: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`,
             Mail: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>`,
             ExternalLink: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
-            Send: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`,
             Settings: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
             AlertTriangle: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
-            Palette: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"></circle><circle cx="17.5" cy="10.5" r=".5"></circle><circle cx="8.5" cy="7.5" r=".5"></circle><circle cx="6.5" cy="12.5" r=".5"></circle><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path></svg>`
+            Palette: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.992 6.492 17.5 2 12 2Z"/></svg>`,
+            Share2: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`,
+            Copy: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`
         };
 
         const CATEGORIES = [
             { name: '観光', icon: 'Map', color: 'text-emerald-500', desc: '定番から穴場スポットまで' },
             { name: 'グルメ', icon: 'Utensils', color: 'text-orange-500', desc: '美味しいご当地' },
             { name: '歴史', icon: 'BookOpen', color: 'text-amber-500', desc: 'ご当地のルーツを探る' },
-            { name: '伝統工芸・ものづくり', icon: 'Palette', color: 'text-indigo-500', desc: '匠の技と歴史を学ぶ' },
+            { name: '伝統工芸・ものづくり', icon: 'Palette', color: 'text-indigo-500', desc: '匠の技と文化' },
             { name: '方言', icon: 'MessageCircle', color: 'text-pink-500', desc: 'ディープな地元弁' },
             { name: 'イベント・祭り', icon: 'Calendar', color: 'text-purple-500', desc: '熱いお祭り騒ぎ' },
             { name: '自然・地理', icon: 'Leaf', color: 'text-green-600', desc: '海・山・湖の絶景' }
@@ -403,10 +344,66 @@
 
         const appRoot = document.getElementById('app-root');
 
-        // ★グローバル設定データ（Firestoreと同期）
+        // デフォルトのリンク集
+        let customLinks = JSON.parse(localStorage.getItem('fukui_quiz_custom_links')) || [
+            { title: 'ふくいドットコム', desc: '福井県公式観光サイト。最新の観光スポットやグルメ情報が満載。', url: 'https://www.fuku-e.com/' },
+            { title: '福井県立恐竜博物館', desc: '世界有数の規模を誇る恐竜博物館の公式サイト。', url: 'https://www.dinosaur.pref.fukui.jp/' }
+        ];
+
+        // デフォルトの法的文書データ
+        let legalDocs = JSON.parse(localStorage.getItem('fukui_quiz_legal_docs')) || {
+            privacy: 'プライバシーポリシーのテキストがここに入ります。管理画面から編集してください。',
+            terms: '利用規約のテキストがここに入ります。管理画面から編集してください。',
+            company: '運営者情報のテキストがここに入ります。管理画面から編集してください。',
+            disclaimer: '免責事項のテキストがここに入ります。管理画面から編集してください。'
+        };
+
+        async function syncSettingsFromCloud() {
+            try {
+                const docSnap = await getDoc(doc(db, "settings", "globalConfig"));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    localStorage.setItem('fukui_quiz_ad_top', data.adTop || '');
+                    localStorage.setItem('fukui_quiz_ad_bottom', data.adBottom || '');
+                    localStorage.setItem('fukui_quiz_links_ad_top', data.linksAdTop || '');
+                    localStorage.setItem('fukui_quiz_links_ad_bottom', data.linksAdBottom || '');
+                    localStorage.setItem('fukui_quiz_gas_url', data.gasUrl || '');
+                    if(data.customLinks) {
+                        customLinks = data.customLinks;
+                        localStorage.setItem('fukui_quiz_custom_links', JSON.stringify(customLinks));
+                    }
+                    if(data.legalDocs) {
+                        legalDocs = data.legalDocs;
+                        localStorage.setItem('fukui_quiz_legal_docs', JSON.stringify(legalDocs));
+                    }
+                    console.log("✅ クラウド設定の同期が完了しました");
+                }
+            } catch (error) {
+                console.error("クラウド設定の同期に失敗しました（ローカル設定を使います）", error);
+            }
+        }
+
+        async function syncSettingsToCloud() {
+            try {
+                await setDoc(doc(db, "settings", "globalConfig"), {
+                    adTop: localStorage.getItem('fukui_quiz_ad_top') || '',
+                    adBottom: localStorage.getItem('fukui_quiz_ad_bottom') || '',
+                    linksAdTop: localStorage.getItem('fukui_quiz_links_ad_top') || '',
+                    linksAdBottom: localStorage.getItem('fukui_quiz_links_ad_bottom') || '',
+                    gasUrl: localStorage.getItem('fukui_quiz_gas_url') || '',
+                    customLinks: customLinks,
+                    legalDocs: legalDocs,
+                    updatedAt: new Date().toISOString()
+                });
+                console.log("✅ クラウドに設定を保存しました");
+            } catch (error) {
+                console.error("クラウドへの設定保存に失敗しました", error);
+            }
+        }
+
         function loadAds() {
-            const topAd = appSettings.adTop;
-            const bottomAd = appSettings.adBottom;
+            const topAd = localStorage.getItem('fukui_quiz_ad_top');
+            const bottomAd = localStorage.getItem('fukui_quiz_ad_bottom');
             
             const topWrapper = document.getElementById('ad-top-wrapper');
             const topContainer = document.getElementById('ad-top-container');
@@ -455,9 +452,13 @@
             `;
 
             try {
-                const querySnapshot = await getDocs(collection(db, "quizzes"));
+                const [quizSnap] = await Promise.all([
+                    getDocs(collection(db, "quizzes")),
+                    syncSettingsFromCloud() 
+                ]);
+
                 const data = [];
-                querySnapshot.forEach((doc) => {
+                quizSnap.forEach((doc) => {
                     data.push({ id: doc.id, ...doc.data() });
                 });
                 
@@ -514,10 +515,9 @@
 
         window.setMode = function(modeStr) {
             initAudio(); 
-            
             toggleEffectLayer(modeStr === 'home' || modeStr === 'result');
             
-            if (modeStr === 'links') {
+            if (modeStr === 'links' || modeStr === 'share' || modeStr === 'legal') {
                 document.getElementById('ad-top-wrapper').classList.add('hidden');
                 document.getElementById('ad-bottom-wrapper').classList.add('hidden');
             } else {
@@ -532,6 +532,8 @@
             else if (modeStr === 'ranking') window.renderRanking();
             else if (modeStr === 'links') renderLinks(); 
             else if (modeStr === 'contact') renderContact();
+            else if (modeStr === 'share') renderShare(); 
+            else if (modeStr === 'legal') renderLegal();
             else if (modeStr === 'admin') {
                 document.getElementById('admin-pass-input').value = '';
                 document.getElementById('admin-auth-error').innerText = '';
@@ -553,11 +555,8 @@
 
         window.startQuiz = function(type, categoryName = null) {
             initAudio(); 
-            
             let availableQuestions = QUIZ_DATA.filter(q => !usedQuestionIds.has(q.id));
-            if (type === 'category') {
-                availableQuestions = availableQuestions.filter(q => q.category === categoryName);
-            }
+            if (type === 'category') availableQuestions = availableQuestions.filter(q => q.category === categoryName);
 
             let requiredCount = 5;
             if (type === 'category') requiredCount = 4;
@@ -570,11 +569,7 @@
             }
 
             const selected = shuffle(availableQuestions).slice(0, requiredCount);
-            currentQuiz = selected.map(q => ({
-                ...q,
-                options: shuffle([...q.options])
-            }));
-
+            currentQuiz = selected.map(q => ({ ...q, options: shuffle([...q.options]) }));
             selected.forEach(q => usedQuestionIds.add(q.id));
 
             let title = '';
@@ -604,9 +599,8 @@
             playSound(isCorrect ? 'correct' : 'wrong');
             showMark(isCorrect);
             
-            if (isCorrect) {
-                score++;
-            } else {
+            if (isCorrect) score++;
+            else {
                 wrongAnswers.push({
                     question: currentQ.question,
                     answer: currentQ.answer,
@@ -629,9 +623,7 @@
             }
         }
 
-        window.continueQuiz = function() {
-            window.startQuiz(quizConfig.type, quizConfig.category);
-        }
+        window.continueQuiz = function() { window.startQuiz(quizConfig.type, quizConfig.category); }
 
         window.handleResetMemory = function() {
             initAudio();
@@ -666,18 +658,14 @@
                             updatedAt: new Date().toISOString()
                         });
                     }
-                } catch(e) {
-                    console.error("プロフィールの更新に失敗", e);
-                }
+                } catch(e) { console.error("プロフィールの更新に失敗", e); }
             }
-            
             errorMsg = '';
             window.setMode('home');
         }
 
         function saveScoreRecord() {
             if (!currentUser.nickname) return;
-            
             const pointsToAdd = score * 10;
             const newRecord = {
                 date: new Date().toISOString(),
@@ -690,46 +678,88 @@
             
             localScores.push(newRecord);
             localStorage.setItem('fukui_quiz_scores', JSON.stringify(localScores));
-            
             saveScoreToFirestore(pointsToAdd);
         }
 
-        window.saveSettings = async function(event) {
-            appSettings.adTop = document.getElementById('top-ad-input').value;
-            appSettings.adBottom = document.getElementById('bottom-ad-input').value;
-            appSettings.linksAdTop = document.getElementById('links-top-ad-input').value;
-            appSettings.linksAdBottom = document.getElementById('links-bottom-ad-input').value;
+        window.saveSettings = async function() {
+            const btn = document.getElementById('admin-save-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="animate-spin w-5 h-5 border-4 border-white border-t-transparent rounded-full mr-2"></div> 保存中...';
+            btn.disabled = true;
+
+            const topAd = document.getElementById('top-ad-input').value;
+            const bottomAd = document.getElementById('bottom-ad-input').value;
+            const linksTopAd = document.getElementById('links-top-ad-input').value;
+            const linksBottomAd = document.getElementById('links-bottom-ad-input').value;
+            const gasUrl = document.getElementById('gas-url-input').value.trim();
             
-            if (await saveAppSettingsToFirestore()) {
-                loadAds();
-                const msgEl = document.getElementById('ad-result-message');
-                msgEl.innerHTML = '✅ 管理者設定をFirestoreに保存・同期しました！';
-                msgEl.className = 'mt-4 text-center font-bold text-emerald-800 bg-emerald-50 border-emerald-500 p-4 rounded-xl border-2 block';
-                
-                setTimeout(() => {
-                    msgEl.classList.add('hidden');
-                    msgEl.classList.remove('block');
-                }, 3000);
-            }
+            localStorage.setItem('fukui_quiz_ad_top', topAd);
+            localStorage.setItem('fukui_quiz_ad_bottom', bottomAd);
+            localStorage.setItem('fukui_quiz_links_ad_top', linksTopAd);
+            localStorage.setItem('fukui_quiz_links_ad_bottom', linksBottomAd);
+            localStorage.setItem('fukui_quiz_gas_url', gasUrl);
+            
+            await syncSettingsToCloud();
+            loadAds();
+            
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+
+            const msgEl = document.getElementById('ad-result-message');
+            msgEl.innerHTML = '✅ クラウドへの設定保存・同期が完了しました！';
+            msgEl.className = 'mt-4 text-center font-bold text-emerald-800 bg-emerald-50 border-emerald-500 p-4 rounded-xl border-2 block';
+            setTimeout(() => {
+                msgEl.classList.add('hidden');
+                msgEl.classList.remove('block');
+            }, 4000);
         }
 
         window.saveGasUrl = async function(btnElement) {
-            appSettings.gasUrl = document.getElementById('gas-url-input').value.trim();
+            const gasUrl = document.getElementById('gas-url-input').value.trim();
+            localStorage.setItem('fukui_quiz_gas_url', gasUrl);
+            await syncSettingsToCloud(); 
             
-            if (await saveAppSettingsToFirestore()) {
-                const originalText = btnElement.innerHTML;
-                btnElement.innerHTML = '✅ 保存しました';
-                btnElement.classList.replace('bg-slate-800', 'bg-emerald-600');
-                btnElement.classList.replace('hover:bg-slate-900', 'hover:bg-emerald-700');
-                btnElement.classList.replace('border-slate-800', 'border-emerald-700');
-                
-                setTimeout(() => {
-                    btnElement.innerHTML = originalText;
-                    btnElement.classList.replace('bg-emerald-600', 'bg-slate-800');
-                    btnElement.classList.replace('hover:bg-emerald-700', 'hover:bg-slate-900');
-                    btnElement.classList.replace('border-emerald-700', 'border-slate-800');
-                }, 2000);
-            }
+            const originalText = btnElement.innerHTML;
+            btnElement.innerHTML = '✅ 保存しました';
+            btnElement.classList.replace('bg-slate-800', 'bg-emerald-600');
+            btnElement.classList.replace('hover:bg-slate-900', 'hover:bg-emerald-700');
+            btnElement.classList.replace('border-slate-800', 'border-emerald-700');
+            
+            setTimeout(() => {
+                btnElement.innerHTML = originalText;
+                btnElement.classList.replace('bg-emerald-600', 'bg-slate-800');
+                btnElement.classList.replace('hover:bg-emerald-700', 'hover:bg-slate-900');
+                btnElement.classList.replace('border-emerald-700', 'border-slate-800');
+            }, 2000);
+        }
+
+        // 🌟 追加：法的文書（ポリシー等）の保存関数
+        window.saveLegalDocs = async function(btnElement) {
+            legalDocs.privacy = document.getElementById('legal-privacy-input').value;
+            legalDocs.terms = document.getElementById('legal-terms-input').value;
+            legalDocs.company = document.getElementById('legal-company-input').value;
+            legalDocs.disclaimer = document.getElementById('legal-disclaimer-input').value;
+            
+            localStorage.setItem('fukui_quiz_legal_docs', JSON.stringify(legalDocs));
+            await syncSettingsToCloud(); 
+            
+            const originalText = btnElement.innerHTML;
+            btnElement.innerHTML = '✅ 保存しました';
+            btnElement.classList.replace('bg-slate-800', 'bg-emerald-600');
+            btnElement.classList.replace('hover:bg-slate-900', 'hover:bg-emerald-700');
+            btnElement.classList.replace('border-slate-800', 'border-emerald-700');
+            
+            setTimeout(() => {
+                btnElement.innerHTML = originalText;
+                btnElement.classList.replace('bg-emerald-600', 'bg-slate-800');
+                btnElement.classList.replace('hover:bg-emerald-700', 'hover:bg-slate-900');
+                btnElement.classList.replace('border-emerald-700', 'border-slate-800');
+            }, 2000);
+        }
+
+        async function saveLinksToStorage() {
+            localStorage.setItem('fukui_quiz_custom_links', JSON.stringify(customLinks));
+            await syncSettingsToCloud(); 
         }
 
         window.addLink = async function() {
@@ -741,25 +771,55 @@
                 alert('サイト名とURLは入力必須です！');
                 return;
             }
-
-            appSettings.customLinks.push({ title, url, desc });
-            if (await saveAppSettingsToFirestore()) {
-                renderAdmin();
-            }
+            customLinks.push({ title, url, desc });
+            await saveLinksToStorage();
+            
+            // リンク追加後、タブの状態を維持して再描画
+            renderAdmin('links'); 
         };
 
         window.deleteLink = async function(index) {
             if (confirm('このリンクを削除してもよろしいですか？')) {
-                appSettings.customLinks.splice(index, 1);
-                if (await saveAppSettingsToFirestore()) {
-                    renderAdmin();
+                customLinks.splice(index, 1);
+                await saveLinksToStorage();
+                renderAdmin('links');
+            }
+        };
+
+        window.shareApp = async function(type) {
+            const shareUrl = window.location.href.split('?')[0]; 
+            const shareText = "地元民しか解けない！？激ムズ「福井県民クイズショー」に挑戦！あなたの福井愛を試そう🦖🦀";
+
+            if (type === 'native' && navigator.share) {
+                try {
+                    await navigator.share({
+                        title: '福井県民クイズショー',
+                        text: shareText,
+                        url: shareUrl,
+                    });
+                } catch (err) {
+                    console.log('シェアをキャンセル、またはエラー', err);
+                }
+            } else if (type === 'line') {
+                const url = `https://line.me/R/msg/text/?${encodeURIComponent(shareText + '\n' + shareUrl)}`;
+                window.open(url, '_blank');
+            } else if (type === 'twitter') {
+                const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+                window.open(url, '_blank');
+            } else if (type === 'copy') {
+                try {
+                    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+                    alert("クリップボードにコピーしました！そのまま貼り付けてシェアしてください。");
+                } catch (err) {
+                    alert("コピーに失敗しました。URLを手動でコピーしてください:\n" + shareUrl);
                 }
             }
         };
 
+        // --- 画面レンダリング関数群 ---
+
         function renderHome() {
             window.scrollTo(0, 0);
-            
             let profileHtml = '';
             if (currentUser.nickname) {
                 profileHtml = `
@@ -797,7 +857,7 @@
 
                         <div id="install-button-container" class="${(deferredPrompt || isIOS || isLine) && !isStandalone ? 'flex' : 'hidden'} justify-center mb-8 relative z-20">
                             <button onclick="window.handleInstallClick()" class="bg-white border-2 border-emerald-500 hover:bg-emerald-50 text-emerald-800 font-black py-2 px-4 rounded-xl shadow-[2px_2px_0_0_#10b981] flex items-center gap-2 animate-bounce transition-all active:translate-y-[2px] active:translate-x-[2px] active:shadow-none w-max mx-auto">
-                                <img src="./icon-192x192.png" alt="アプリアイコン" class="w-8 h-8 rounded-lg shadow-sm border border-slate-200">
+                                <img src="./icon-192x192.png" alt="アプリアイコン" onerror="this.style.display='none'" class="w-8 h-8 rounded-lg shadow-sm border border-slate-200">
                                 <div class="text-left">
                                     <div class="text-[9px] text-emerald-600 font-bold mb-0.5 leading-none">無料アプリ版をゲット</div>
                                     <div class="text-xs md:text-sm tracking-wide leading-tight">PC・スマホに追加する</div>
@@ -849,7 +909,10 @@
                         </button>
                         <p class="text-xs text-slate-400 font-bold mt-2 mb-8">現在の出題済み問題数: ${usedQuestionIds.size} / ${QUIZ_DATA.length}</p>
                         
-                        <div class="flex flex-wrap justify-center items-center gap-3">
+                        <div class="flex flex-wrap justify-center items-center gap-3 mb-6">
+                            <button onclick="window.setMode('share')" class="flex items-center gap-2 px-5 py-3 bg-white border-2 border-slate-800 rounded-xl shadow-[2px_2px_0_0_#1e293b] active:translate-y-[2px] active:translate-x-[4px] active:shadow-none font-black text-slate-700 text-sm transition-all">
+                                <div class="w-5 h-5 text-orange-500">${ICONS.Share2}</div> お友達に教える
+                            </button>
                             <button onclick="window.setMode('links')" class="flex items-center gap-2 px-5 py-3 bg-white border-2 border-slate-800 rounded-xl shadow-[2px_2px_0_0_#1e293b] active:translate-y-[2px] active:translate-x-[4px] active:shadow-none font-black text-slate-700 text-sm transition-all">
                                 <div class="w-5 h-5 text-emerald-500">${ICONS.Link}</div> ご当地リンク集
                             </button>
@@ -858,6 +921,69 @@
                             </button>
                             <button onclick="window.setMode('admin')" class="flex items-center gap-1 px-3 py-3 bg-slate-100 border-2 border-slate-300 rounded-xl shadow-[2px_2px_0_0_#cbd5e1] active:translate-y-[2px] active:translate-x-[4px] active:shadow-none font-black text-slate-500 hover:text-slate-700 hover:bg-slate-200 text-xs transition-all ml-2">
                                 <div class="w-4 h-4">${ICONS.Settings}</div> 管理
+                            </button>
+                        </div>
+                        
+                        <!-- 🌟 ユーザー向け規約リンク -->
+                        <div class="text-center">
+                            <button onclick="window.setMode('legal')" class="text-xs text-slate-400 hover:text-slate-600 underline transition-colors">利用規約・プライバシーポリシー等</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            appRoot.innerHTML = html;
+        }
+
+        function renderShare() {
+            window.scrollTo(0, 0);
+            const shareUrl = window.location.href.split('?')[0]; 
+            
+            let html = `
+            <div class="flex-1 p-6 w-full animate-fade-in relative z-10">
+                <div class="max-w-2xl mx-auto">
+                    <button onclick="window.setMode('home')" class="text-slate-600 hover:text-blue-600 mb-6 flex items-center gap-2 transition-colors font-black bg-white border-2 border-slate-800 px-4 py-2 rounded-lg shadow-[2px_2px_0_0_#1e293b] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none w-max">
+                        ← ホームに戻る
+                    </button>
+                    
+                    <div class="bg-white border-4 border-slate-800 rounded-3xl p-6 md:p-10 shadow-[8px_8px_0_0_#1e293b] mb-10 text-center">
+                        <div class="flex items-center justify-center gap-3 mb-6">
+                            <div class="text-orange-500 w-10 h-10">${ICONS.Share2}</div>
+                            <h2 class="text-2xl md:text-3xl font-black text-slate-800">お友達に教える</h2>
+                        </div>
+                        
+                        <div class="text-5xl mb-4 animate-bounce">📱</div>
+                        <p class="font-bold text-slate-600 text-sm md:text-base leading-relaxed mb-8">
+                            この激ムズクイズ、あなたの周りの「地元民」は解けるでしょうか！？<br>
+                            ぜひ家族やお友達にシェアして、一緒に盛り上がりましょう！
+                        </p>
+
+                        <div class="space-y-4 max-w-sm mx-auto">
+            `;
+
+            if (navigator.share) {
+                html += `
+                            <button onclick="window.shareApp('native')" class="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all flex items-center justify-center gap-3 text-lg">
+                                <div class="w-6 h-6">${ICONS.Share2}</div>
+                                スマホの機能でシェア
+                            </button>
+                            <div class="my-4 text-slate-400 font-bold text-xs">または</div>
+                `;
+            }
+
+            html += `
+                            <button onclick="window.shareApp('line')" class="w-full py-4 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all flex items-center justify-center gap-3 text-lg">
+                                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.036 9.608.391.084.922.258 1.057.592.122.303.079.778.039 1.085l-.171 1.027c-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967 1.739-1.907 2.572-3.843 2.572-5.992z"/></svg>
+                                LINEで送る
+                            </button>
+
+                            <button onclick="window.shareApp('twitter')" class="w-full py-4 rounded-xl bg-black hover:bg-slate-800 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all flex items-center justify-center gap-3 text-lg">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.005 4.15H5.059z"/></svg>
+                                X でつぶやく
+                            </button>
+
+                            <button onclick="window.shareApp('copy')" class="w-full py-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-black border-2 border-slate-300 shadow-[4px_4px_0_0_#cbd5e1] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all flex items-center justify-center gap-3 text-lg mt-4">
+                                <div class="w-5 h-5">${ICONS.Copy}</div>
+                                URLをコピーする
                             </button>
                         </div>
                     </div>
@@ -1141,13 +1267,8 @@
             appRoot.innerHTML = html;
         }
 
-        // ==========================================
-        // 🏆 リアルタイムランキング画面（Firestore連携）
-        // ==========================================
         window.renderRanking = async function() {
             window.scrollTo(0, 0);
-            
-            // ローディングUI
             appRoot.innerHTML = `
                 <div class="flex-1 p-6 w-full animate-fade-in relative z-10 flex flex-col items-center justify-center mt-20">
                     <svg class="animate-spin h-12 w-12 text-yellow-500 mx-auto mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -1156,7 +1277,6 @@
             `;
 
             try {
-                // Firestoreから全プレイヤーのスコアを取得
                 const querySnapshot = await getDocs(collection(db, "users"));
                 let rankingData = [];
                 querySnapshot.forEach(doc => {
@@ -1170,7 +1290,6 @@
                     });
                 });
                 
-                // まだ遊んでいる人が少ない初期状態のためにダミーデータを数人分混ぜておく
                 const DUMMY_RANKING = [
                     { nickname: 'ご当地マイスター', prefecture: '福井県', score: 980, id: 'dummy1' },
                     { nickname: 'クイズ博士', prefecture: '東京都', score: 850, id: 'dummy2' },
@@ -1180,11 +1299,7 @@
                 ];
                 
                 rankingData = [...rankingData, ...DUMMY_RANKING];
-                
-                // スコアの高い順に並び替え（降順）
                 rankingData.sort((a, b) => b.score - a.score);
-                
-                // 上位50人に絞る
                 rankingData = rankingData.slice(0, 50);
 
                 let html = `
@@ -1267,8 +1382,8 @@
         function renderLinks() {
             window.scrollTo(0, 0);
             
-            const linksTopAd = appSettings.linksAdTop || '';
-            const linksBottomAd = appSettings.linksAdBottom || '';
+            const linksTopAd = localStorage.getItem('fukui_quiz_links_ad_top') || '';
+            const linksBottomAd = localStorage.getItem('fukui_quiz_links_ad_bottom') || '';
             
             let html = `
             <div class="flex-1 p-6 w-full animate-fade-in relative z-10">
@@ -1287,16 +1402,12 @@
             `;
 
             if (linksTopAd.trim()) {
-                html += `
-                <div class="mb-6 flex flex-col items-center w-full overflow-hidden">
-                    <span class="text-[9px] text-slate-400 font-bold mb-1 tracking-wider">PR</span>
-                    ${linksTopAd}
-                </div>`;
+                html += `<div class="mb-6 flex justify-center w-full overflow-hidden">${linksTopAd}</div>`;
             }
                         
             html += `<div class="space-y-4">`;
 
-            appSettings.customLinks.forEach(link => {
+            customLinks.forEach(link => {
                 html += `
                             <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="block p-5 bg-white border-2 border-slate-800 rounded-xl shadow-[4px_4px_0_0_#1e293b] hover:bg-slate-50 active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all group">
                                 <div class="flex items-start justify-between gap-4">
@@ -1317,11 +1428,7 @@
             `;
 
             if (linksBottomAd.trim()) {
-                html += `
-                <div class="mt-8 flex flex-col items-center w-full overflow-hidden">
-                    <span class="text-[9px] text-slate-400 font-bold mb-1 tracking-wider">PR</span>
-                    ${linksBottomAd}
-                </div>`;
+                html += `<div class="mt-8 flex justify-center w-full overflow-hidden">${linksBottomAd}</div>`;
             }
             
             html += `
@@ -1341,13 +1448,10 @@
             appRoot.innerHTML = html;
         }
 
-        function renderAdmin() {
+        // 🌟 追加：ユーザー向け「法的文書」画面のレンダリング
+        function renderLegal() {
             window.scrollTo(0, 0);
             
-            const currentTopAd = appSettings.adTop || '';
-            const currentBottomAd = appSettings.adBottom || '';
-            const currentGasUrl = appSettings.gasUrl || '';
-
             let html = `
             <div class="flex-1 p-6 w-full animate-fade-in relative z-10">
                 <div class="max-w-3xl mx-auto">
@@ -1356,12 +1460,63 @@
                     </button>
                     
                     <div class="bg-white border-4 border-slate-800 rounded-3xl p-6 md:p-10 shadow-[8px_8px_0_0_#1e293b] mb-10">
-                        <div class="flex items-center justify-center gap-3 mb-6 border-b-2 border-slate-200 pb-6">
-                            <span class="text-3xl">⚙️</span>
-                            <h2 class="text-2xl md:text-3xl font-black text-slate-800">広告・管理者設定</h2>
+                        <div class="flex items-center justify-center gap-3 mb-8 border-b-2 border-slate-200 pb-6">
+                            <div class="text-slate-500 w-8 h-8 md:w-10 md:h-10">${ICONS.BookOpen}</div>
+                            <h2 class="text-2xl md:text-3xl font-black text-slate-800">利用規約・ポリシー等</h2>
                         </div>
                         
-                        <h3 class="text-xl font-black text-slate-800 mt-6 mb-4 border-l-4 border-purple-500 pl-3">お問い合わせシステム（GAS）設定</h3>
+                        <div class="space-y-10 text-slate-700">
+                            <section>
+                                <h3 class="text-xl font-black text-slate-800 mb-3 border-l-4 border-blue-500 pl-3">プライバシーポリシー</h3>
+                                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 whitespace-pre-wrap font-medium text-sm leading-relaxed">${legalDocs.privacy}</div>
+                            </section>
+                            
+                            <section>
+                                <h3 class="text-xl font-black text-slate-800 mb-3 border-l-4 border-emerald-500 pl-3">利用規約</h3>
+                                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 whitespace-pre-wrap font-medium text-sm leading-relaxed">${legalDocs.terms}</div>
+                            </section>
+
+                            <section>
+                                <h3 class="text-xl font-black text-slate-800 mb-3 border-l-4 border-purple-500 pl-3">運営者情報</h3>
+                                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 whitespace-pre-wrap font-medium text-sm leading-relaxed">${legalDocs.company}</div>
+                            </section>
+
+                            <section>
+                                <h3 class="text-xl font-black text-slate-800 mb-3 border-l-4 border-pink-500 pl-3">免責事項</h3>
+                                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 whitespace-pre-wrap font-medium text-sm leading-relaxed">${legalDocs.disclaimer}</div>
+                            </section>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>`;
+            
+            appRoot.innerHTML = html;
+        }
+
+        // 🌟 変更：タブ切り替えを取り入れた管理者画面
+        window.renderAdmin = function(activeTab = 'ads') {
+            window.scrollTo(0, 0);
+            
+            const currentTopAd = localStorage.getItem('fukui_quiz_ad_top') || '';
+            const currentBottomAd = localStorage.getItem('fukui_quiz_ad_bottom') || '';
+            const currentGasUrl = localStorage.getItem('fukui_quiz_gas_url') || '';
+
+            // タブのHTML
+            const tabHtml = `
+                <div class="flex flex-wrap gap-2 mb-8 border-b-2 border-slate-200 pb-2">
+                    <button onclick="renderAdmin('ads')" class="px-4 py-2 rounded-t-lg transition-colors ${activeTab === 'ads' ? 'admin-tab-active bg-slate-50' : 'admin-tab-inactive hover:bg-slate-50'}">① 広告・システム設定</button>
+                    <button onclick="renderAdmin('links')" class="px-4 py-2 rounded-t-lg transition-colors ${activeTab === 'links' ? 'admin-tab-active bg-slate-50' : 'admin-tab-inactive hover:bg-slate-50'}">② リンク集管理</button>
+                    <button onclick="renderAdmin('legal')" class="px-4 py-2 rounded-t-lg transition-colors ${activeTab === 'legal' ? 'admin-tab-active bg-slate-50' : 'admin-tab-inactive hover:bg-slate-50'}">③ 法的文書（規約等）設定</button>
+                </div>
+            `;
+
+            let contentHtml = '';
+
+            // タブ①：広告・システム設定
+            if (activeTab === 'ads') {
+                contentHtml = `
+                        <h3 class="text-xl font-black text-slate-800 mb-4 border-l-4 border-purple-500 pl-3">お問い合わせシステム（GAS）設定</h3>
                         <p class="font-bold text-slate-600 text-sm mb-4">お問い合わせフォームからメールを送信するための「GASウェブアプリURL」を設定します。</p>
                         
                         <div class="space-y-6 mb-10">
@@ -1403,47 +1558,52 @@
                         <div class="space-y-6 mb-10">
                             <div>
                                 <label class="block text-sm font-black text-slate-800 mb-2">リンク集 上部広告枠 (HTMLタグ)</label>
-                                <textarea id="links-top-ad-input" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y placeholder:text-slate-400" placeholder="<a href='...'><img src='...'></a>">${appSettings.linksAdTop || ''}</textarea>
+                                <textarea id="links-top-ad-input" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y placeholder:text-slate-400" placeholder="<a href='...'><img src='...'></a>">${localStorage.getItem('fukui_quiz_links_ad_top') || ''}</textarea>
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-black text-slate-800 mb-2">リンク集 下部広告枠 (HTMLタグ)</label>
-                                <textarea id="links-bottom-ad-input" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y placeholder:text-slate-400" placeholder="<a href='...'><img src='...'></a>">${appSettings.linksAdBottom || ''}</textarea>
+                                <textarea id="links-bottom-ad-input" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-mono text-xs transition-all resize-y placeholder:text-slate-400" placeholder="<a href='...'><img src='...'></a>">${localStorage.getItem('fukui_quiz_links_ad_bottom') || ''}</textarea>
                             </div>
                         </div>
 
                         <div class="pt-2 text-center border-b-2 border-slate-200 pb-8">
-                            <button onclick="window.saveSettings()" class="w-full md:w-auto min-w-[240px] py-4 px-8 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all text-lg mx-auto">
-                                全ての広告設定を保存する
+                            <button id="admin-save-btn" onclick="window.saveSettings()" class="w-full md:w-auto min-w-[240px] py-4 px-8 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all text-lg mx-auto flex items-center justify-center">
+                                全ての設定を保存する
                             </button>
                             <div id="ad-result-message" class="mt-4 text-center font-bold hidden rounded-xl p-4 border-2"></div>
                         </div>
+                `;
+            }
 
-                        <h3 class="text-xl font-black text-slate-800 mt-10 mb-4 border-l-4 border-emerald-500 pl-3">ご当地リンク集の管理</h3>
+            // タブ②：リンク集管理
+            else if (activeTab === 'links') {
+                contentHtml = `
+                        <h3 class="text-xl font-black text-slate-800 mb-4 border-l-4 border-emerald-500 pl-3">ご当地リンク集の管理</h3>
                         <p class="font-bold text-slate-600 text-sm mb-4">お問い合わせで依頼があった相互リンクなどは、ここから追加・管理できます。</p>
                         
                         <div class="space-y-3 mb-6">
-            `;
+                `;
 
-            if (appSettings.customLinks.length === 0) {
-                html += `<p class="text-slate-500 font-bold text-sm bg-slate-100 p-4 rounded-xl border-2 border-slate-200 text-center">登録されているリンクはありません。</p>`;
-            } else {
-                appSettings.customLinks.forEach((link, index) => {
-                    html += `
-                            <div class="flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-200 rounded-xl">
-                                <div class="overflow-hidden mr-4">
-                                    <div class="font-black text-slate-800 text-sm truncate">${link.title}</div>
-                                    <div class="text-xs text-blue-500 truncate"><a href="${link.url}" target="_blank" class="hover:underline">${link.url}</a></div>
+                if (customLinks.length === 0) {
+                    contentHtml += `<p class="text-slate-500 font-bold text-sm bg-slate-100 p-4 rounded-xl border-2 border-slate-200 text-center">登録されているリンクはありません。</p>`;
+                } else {
+                    customLinks.forEach((link, index) => {
+                        contentHtml += `
+                                <div class="flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-200 rounded-xl">
+                                    <div class="overflow-hidden mr-4">
+                                        <div class="font-black text-slate-800 text-sm truncate">${link.title}</div>
+                                        <div class="text-xs text-blue-500 truncate"><a href="${link.url}" target="_blank" class="hover:underline">${link.url}</a></div>
+                                    </div>
+                                    <button onclick="window.deleteLink(${index})" class="shrink-0 px-3 py-2 bg-red-100 text-red-600 hover:bg-red-200 font-bold text-xs border-2 border-red-300 rounded-lg transition-colors">
+                                        削除
+                                    </button>
                                 </div>
-                                <button onclick="window.deleteLink(${index})" class="shrink-0 px-3 py-2 bg-red-100 text-red-600 hover:bg-red-200 font-bold text-xs border-2 border-red-300 rounded-lg transition-colors">
-                                    削除
-                                </button>
-                            </div>
-                    `;
-                });
-            }
+                        `;
+                    });
+                }
 
-            html += `
+                contentHtml += `
                         </div>
 
                         <div class="bg-emerald-50 border-2 border-emerald-200 p-5 rounded-xl space-y-4 shadow-sm">
@@ -1457,7 +1617,61 @@
                                 <div class="w-4 h-4">${ICONS.Link}</div> リンクを追加する
                             </button>
                         </div>
+                `;
+            }
+
+            // 🌟 タブ③：法的文書設定（新規）
+            else if (activeTab === 'legal') {
+                contentHtml = `
+                        <h3 class="text-xl font-black text-slate-800 mb-4 border-l-4 border-orange-500 pl-3">法的文書（規約等）設定</h3>
+                        <p class="font-bold text-slate-600 text-sm mb-6">アプリ下部に表示される利用規約やプライバシーポリシーのテキストを設定します。<br>※改行もそのまま反映されます。</p>
                         
+                        <div class="space-y-6 mb-10">
+                            <div>
+                                <label class="block text-sm font-black text-slate-800 mb-2">プライバシーポリシー</label>
+                                <textarea id="legal-privacy-input" rows="5" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-medium text-sm transition-all resize-y">${legalDocs.privacy}</textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-black text-slate-800 mb-2">利用規約</label>
+                                <textarea id="legal-terms-input" rows="5" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-medium text-sm transition-all resize-y">${legalDocs.terms}</textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-black text-slate-800 mb-2">運営者情報</label>
+                                <textarea id="legal-company-input" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-medium text-sm transition-all resize-y">${legalDocs.company}</textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-black text-slate-800 mb-2">免責事項</label>
+                                <textarea id="legal-disclaimer-input" rows="3" class="w-full px-4 py-3 rounded-xl border-2 border-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-100 font-medium text-sm transition-all resize-y">${legalDocs.disclaimer}</textarea>
+                            </div>
+
+                            <div class="pt-2 text-center">
+                                <button onclick="window.saveLegalDocs(this)" class="w-full md:w-auto min-w-[240px] py-4 px-8 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-black border-2 border-slate-800 shadow-[4px_4px_0_0_#1e293b] active:translate-y-[4px] active:translate-x-[4px] active:shadow-none transition-all text-lg mx-auto">
+                                    規約情報を保存する
+                                </button>
+                            </div>
+                        </div>
+                `;
+            }
+
+            let html = `
+            <div class="flex-1 p-6 w-full animate-fade-in relative z-10">
+                <div class="max-w-3xl mx-auto">
+                    <button onclick="window.setMode('home')" class="text-slate-600 hover:text-blue-600 mb-6 flex items-center gap-2 transition-colors font-black bg-white border-2 border-slate-800 px-4 py-2 rounded-lg shadow-[2px_2px_0_0_#1e293b] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none w-max">
+                        ← ホームに戻る
+                    </button>
+                    
+                    <div class="bg-white border-4 border-slate-800 rounded-3xl p-6 md:p-10 shadow-[8px_8px_0_0_#1e293b] mb-10">
+                        <div class="flex items-center justify-center gap-3 mb-6">
+                            <span class="text-3xl">⚙️</span>
+                            <h2 class="text-2xl md:text-3xl font-black text-slate-800">管理者設定</h2>
+                        </div>
+                        
+                        ${tabHtml}
+                        ${contentHtml}
+
                     </div>
                 </div>
             </div>`;
@@ -1572,7 +1786,7 @@
             const btnSpinner = document.getElementById('btnSpinner');
             const resultMessage = document.getElementById('resultMessage');
 
-            const GAS_WEB_APP_URL = appSettings.gasUrl || '';
+            const GAS_WEB_APP_URL = localStorage.getItem('fukui_quiz_gas_url') || '';
 
             form.addEventListener('submit', async (e) => {
                 e.preventDefault(); 
@@ -1624,16 +1838,10 @@
         }
 
         // ==========================================
-        // 🚀 アプリの起動（データを取得してから画面を表示）
+        // 🚀 アプリの起動
         // ==========================================
-        async function bootApp() {
-            await fetchAppSettings();
-            await fetchQuizData();
-        }
+        fetchQuizData();
         
-        bootApp();
-        
-        // 🌟 PWA（Service Worker）の登録
         if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
